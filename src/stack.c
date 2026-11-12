@@ -1,93 +1,143 @@
 /**
-*@file : stack.c
-*@brief: stack implementation
-*/
+ * @file  : stack.c
+ * @brief : This file defines the functions declared in stack.h
+ */
 
 #include "../include/stack.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 
+/* Internal structs */
+
 typedef struct StackNode {
     int value;
     struct StackNode *next;
 } StackNode;
 
-struct Stack {
+typedef struct Stack {
     StackNode *top;
     size_t length;
-};
+} Stack;
 
-Stack *stack_create(void) { 
-    return calloc(1, sizeof(Stack)); 
+/* Internal API */
+
+/**
+ * @brief Removes all elements from a stack
+ *
+ * @param[in,out] stack Stack to clear
+ *
+ * @note The stack itself remains allocated and can be reused
+ */
+static void stack_clear(stack_t stack);
+
+/* Public API */
+
+stack_t stack_create(void) {
+    // Create an empty stack and initialize all fields to zero
+    return calloc(1, sizeof(Stack));
 }
 
-bool stack_is_empty(const Stack *stack) { 
-    return stack == NULL || stack->length == 0; 
+void stack_destroy(stack_t *stack) {
+    // Do nothing if the stack pointer or the stack itself is NULL
+    if (stack == NULL || *stack == NULL) return;
+
+    // Clear all elements from the stack
+    stack_clear(*stack);
+
+    // Free the memory allocated for the stack
+    free(*stack);
+    *stack = NULL;
 }
 
+/* Stack state */
 
-size_t stack_length(const Stack *stack) { 
-    return !stack ? 0 : stack->length; 
+bool stack_is_empty(const stack_t stack) {
+    // Return true if the stack is NULL or empty
+    return stack == NULL || stack->length == 0;
 }
 
+size_t stack_length(const stack_t stack) {
+    // Return the number of elements in the stack, or 0 if the stack is NULL
+    return !stack ? 0 : stack->length;
+}
 
-bool stack_push(Stack *stack, int value) {
+/* Insertion */
+
+bool stack_push(stack_t stack, int value) {
+    // Do nothing if the stack is NULL
     if (!stack) return false;
 
+    // Allocate memory for a new node
     StackNode *node = malloc(sizeof(*node));
-    if (!node) 
-        return false;
 
+    // Stop if memory allocation fails
+    if (!node) return false;
+
+    // Initialize the new node and link it to the current top
     node->value = value;
     node->next = stack->top;
+
+    // Update the top of the stack
     stack->top = node;
+
+    // Update the stack length
     stack->length++;
 
     return true;
 }
 
-bool stack_pop(Stack *stack, int *out_value) {
-    if (stack_is_empty(stack))  
-        return false;
+/* Removal */
 
+bool stack_pop(stack_t stack, int *out_value) {
+    // Do nothing if the stack is empty
+    if (stack_is_empty(stack)) return false;
+
+    // Store the top node
     StackNode *node = stack->top;
-    if (out_value) 
+
+    // Copy its value if an output pointer is provided
+    if (out_value)
         *out_value = node->value;
 
+    // Remove the top node
     stack->top = node->next;
-    stack->length--;
 
+    // Update the stack length and free the removed node
+    stack->length--;
     free(node);
+
     return true;
 }
 
-void stack_clear(Stack *stack) {
+/* Internal helpers */
+
+static void stack_clear(stack_t stack) {
+    // Do nothing if the stack is NULL
     if (!stack) return;
+
+    // Remove all elements from the stack
     int ignored = 0;
-    while (stack_pop(stack, &ignored)) {
-    }
+    while (stack_pop(stack, &ignored)) {}
 }
 
-void stack_destroy(Stack **stack) {
-    if (stack == NULL || *stack == NULL) return;
+/* Utilities */
 
-    stack_clear(*stack);
-
-    free(*stack);
-    *stack = NULL;
-}
-
-void stack_print(const Stack *stack) {
+void stack_print(const stack_t stack) {
+    // Print the opening bracket
     putchar('[');
+
+    // Print all values separated by commas
     if (stack != NULL) {
         for (
-            const StackNode *node = stack->top; 
-            node != NULL; 
+            const StackNode *node = stack->top;
+            node != NULL;
             node = node->next
-        ){
+        ) {
             printf("%d%s", node->value, node->next == NULL ? "" : ", ");
         }
     }
+
+    // Print the closing bracket and a newline
     puts("]");
 }

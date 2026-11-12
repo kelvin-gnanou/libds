@@ -23,11 +23,11 @@
 
 The project currently includes:
 
-- a stack (LIFO);
-- a queue (FIFO);
-- a singly linked list;
+- a stack (LIFO) of integers;
+- a queue (FIFO) of integers;
+- a singly linked list of integers;
 - a binary search tree of integers;
-- a graph represented by adjacency lists, supporting directed and undirected edges.
+- a graph of integers represented by adjacency lists, supporting directed and undirected edges .
 
 Each data structure has a public header and a separate implementation, with dynamically managed memory. `src/main.c` provides a menu for running demonstrations. The test suite covers the main operations of each structure.
 
@@ -108,7 +108,7 @@ Public declarations are in `include/`; implementations are in `src/`.
 | Stack | `include/stack.h` | Create, push, pop, clear, get the size, and destroy |
 | Queue | `include/queue.h` | Create, enqueue, dequeue, clear, get the size, and destroy |
 | Singly linked list | `include/list.h` | Insert at either end, remove from either end or by value, clear, and destroy |
-| Binary search tree | `include/binary_tree.h` | Insert, search, get the size and height, traverse in order, and destroy |
+| Binary search tree | `include/tree.h` | Insert, search, get the size and height, traverse in order, and destroy |
 | Graph | `include/graph.h` | Create a directed or undirected graph, add an edge, get the vertex count, and destroy |
 
 Functions that may fail during allocation or modification return a Boolean where the API provides one. Destruction functions accept a pointer to the structure pointer and set it to `NULL` after freeing the structure.
