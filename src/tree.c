@@ -1,149 +1,149 @@
 /**
- * @file   : binary_tree.c
- * @brief  : This file defines the functions declared in binary_tree.h
- * @todo   : Add is empty fonction
+ * @file tree.c
+ * @brief Implements the public binary search tree interface declared in ds/tree.h
+ * @todo Implement an emptiness check
  */
 
-#include "../include/tree.h"
+#include "../include/ds/tree.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 
-/* Internal struct */
+/* Internal structures */
 
-struct TreeNode {
+typedef struct TreeNode {
     int value;
     struct TreeNode *left;
     struct TreeNode *right;
-};
+} TreeNode;
+
+typedef struct Tree {
+    TreeNode *root; 
+    size_t size;
+} Tree;
 
 /* Internal API */
 
 /**
- * @brief Recursively destroys all nodes in a binary tree
+ * @brief Recursively frees all nodes in a binary tree.
  *
- * @param[in,out] node Root node of the subtree to destroy
+ * @param[in,out] node Root node of the subtree to clear.
  */
-static void destroy_nodes(BinaryTree node);
+static void ds_tree_clear(TreeNode *node);
 
 /**
- * @brief Counts the number of nodes in a binary tree
+ * @brief Calculates the height of a binary tree.
  *
- * @param[in] node Root node of the subtree
+ * @param[in] node Root node of the subtree to inspect.
  *
- * @return Number of nodes in the subtree
+ * @return The height of the subtree.
  */
-static size_t node_count(const BinaryTree node);
+static size_t ds_tree_calculate_height(const TreeNode *node);
 
-/**
- * @brief Calculates the height of a binary tree
- *
- * @param[in] node Root node of the subtree
- *
- * @return Height of the subtree
- */
-static size_t node_height(const BinaryTree node);
-
-/**
- * @brief Prints the values of a binary tree using inorder traversal
- *
- * @param[in] node Root node of the subtree
- */
-static void inorder(const BinaryTree node);
+// /**
+//  * @brief Prints the values of a binary tree using inorder traversal.
+//  *
+//  * @param[in] node Root node of the subtree to traverse.
+//  */
+// static void ds_tree_inorder(const TreeNode *node);
 
 /* Lifecycle */
 
-BinaryTree tree_create(void) {
-    // Create an empty tree
-    return NULL;
+ds_tree_t ds_tree_create(void) {
+    // Allocate and initialize an empty tree
+    return calloc(1, sizeof(Tree));
 }
 
-void tree_destroy(BinaryTree *root) {
-    // Do nothing if the root pointer is NULL
-    if (!root) return;
+void ds_tree_destroy(ds_tree_t *tree) {
+    // Do nothing if the tree pointer or the tree itself is NULL
+    if (!tree || !*tree) return;
 
-    // Destroy all nodes in the tree
-    destroy_nodes(*root);
+    // Free all nodes in the tree
+    ds_tree_clear((*tree)->root);
 
-    // Reset the root pointer
-    *root = NULL;
+    // Free the tree structure
+    free(*tree);
+    *tree = NULL;
 }
 
 /* Internal helpers */
 
-static void destroy_nodes(BinaryTree node) {
-    // Do nothing if the node is NULL
+static void ds_tree_clear(TreeNode *node) {
+    // Stop if the node is NULL
     if (!node) return;
 
-    // Destroy the left and right subtrees
-    destroy_nodes(node->left);
-    destroy_nodes(node->right);
+    // Recursively clear the left and right subtrees
+    ds_tree_clear(node->left);
+    ds_tree_clear(node->right);
 
-    // Free the memory allocated for the current node
+    // Free the current node
     free(node);
 }
 
-static size_t node_count(const BinaryTree node) {
+static size_t ds_tree_calculate_height(const TreeNode *node) {
     // Return 0 if the node is NULL
     if (!node) return 0;
 
-    // Count the current node and its left and right subtrees
-    return 1 + node_count(node->left) + node_count(node->right);
-}
+    // Calculate the heights of the left and right subtrees
+    size_t left = ds_tree_calculate_height(node->left);
+    size_t right = ds_tree_calculate_height(node->right);
 
-static size_t node_height(const BinaryTree node) {
-    // Return 0 if the node is NULL
-    if (!node) return 0;
-
-    // Calculate the height of the left and right subtrees
-    size_t left = node_height(node->left);
-    size_t right = node_height(node->right);
-
-    // Return 1 plus the maximum height of the subtrees
+    // Return 1 plus the maximum height of the two subtrees
     return 1 + (left > right ? left : right);
 }
 
 /* Operations */
 
-bool tree_insert(BinaryTree *root, int value) {
-    // Do nothing if the root pointer is NULL
-    if (!root) return false;
+bool ds_tree_insert(ds_tree_t tree, int value) {
+    // Reject a NULL tree
+    if (!tree) return false;
 
-    // Find the appropriate position for the new value
-    while (*root != NULL) {
+    // Find the appropriate insertion position
+    TreeNode **current = &tree->root;
+
+    while (*current) {
         // Stop if the value already exists
-        if (value == (*root)->value) return true;
+        if (value == (*current)->value) return true;
 
-        // Move to the left or right subtree depending on the value
-        root = (value < (*root)->value)
-            ? &(*root)->left
-            : &(*root)->right;
+        // Move to the left or right subtree based on the value
+        current = value < (*current)->value
+            ? &(*current)->left
+            : &(*current)->right;
     }
 
     // Allocate memory for the new node
-    *root = malloc(sizeof(**root));
+    TreeNode *node = malloc(sizeof(*node));
 
     // Stop if memory allocation fails
-    if (!(*root)) return false;
+    if (!node) return false;
 
     // Initialize the new node
-    (*root)->value = value;
-    (*root)->left = NULL;
-    (*root)->right = NULL;
+    node->value = value;
+    node->left = NULL;
+    node->right = NULL;
+
+    // Insert the new node
+    *current = node;
+
+    // Increment the tree size
+    tree->size++;
 
     return true;
 }
 
-bool tree_contains(const BinaryTree root, int value) {
-    // Start searching from the root
-    const struct TreeNode *node = root;
+bool ds_tree_contain(const ds_tree_t tree, int value) {
+    // Reject a NULL tree
+    if (!tree) return false;
 
-    // Search while the current node is not NULL
+    // Start searching from the root
+    const TreeNode *node = tree->root;
+
+    // Continue searching while the current node is not NULL
     while (node) {
         // Return true if the value is found
         if (value == node->value) return true;
 
-        // Move to the left or right subtree depending on the value
+        // Move to the left or right subtree based on the value
         node = value < node->value
             ? node->left
             : node->right;
@@ -155,36 +155,39 @@ bool tree_contains(const BinaryTree root, int value) {
 
 /* Traversal */
 
-static void inorder(const BinaryTree node) {
-    // Stop if the node is NULL
-    if (!node) return;
+// static void ds_tree_inorder(const TreeNode *node) {
+//     // Stop if the node is NULL
+//     if (!node) return;
 
-    // Visit the left subtree
-    inorder(node->left);
+//     // Traverse the left subtree
+//     ds_tree_inorder(node->left);
 
-    // Visit the current node
-    printf("%d ", node->value);
+//     // Visit the current node
+//     printf("%d ", node->value);
 
-    // Visit the right subtree
-    inorder(node->right);
+//     // Traverse the right subtree
+//     ds_tree_inorder(node->right);
+// }
+
+/* Tree properties */
+
+size_t ds_tree_size(const ds_tree_t tree) {
+    // Return the number of nodes, or 0 if the tree is NULL
+    return tree ? tree->size : 0;
+}
+
+size_t ds_tree_height(const ds_tree_t tree) {
+    // Return the height of the tree, or 0 if the tree is NULL
+    return tree ? ds_tree_calculate_height(tree->root) : 0;
 }
 
 /* Utilities */
 
-size_t tree_size(const BinaryTree root) {
-    // Return the total number of nodes in the tree
-    return node_count(root);
-}
-
-size_t tree_height(const BinaryTree root) {
-    // Return the height of the tree
-    return node_height(root);
-}
-
-void tree_print_inorder(const BinaryTree root) {
-    // Print the tree using inorder traversal
-    inorder(root);
-
-    // Print a newline after the traversal
-    putchar('\n');
-}
+// void ds_tree_print_inorder(const ds_tree_t tree) {
+//     // Print the tree using inorder traversal
+//     if (tree)
+//         ds_tree_inorder(tree->root);
+//
+//     // Print a newline after the traversal
+//     putchar('\n');
+// }

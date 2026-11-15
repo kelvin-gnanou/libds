@@ -1,15 +1,16 @@
 /**
- * @file   : graph.c
- * @brief  : This file defines the functions declared in graph.h
- * @todo   : Check for duplicate edges before insertion
+ * @file graph.c
+ * @brief Implements the public graph interface declared in ds/graph.h.
+ * @todo Check for duplicate edges before insertion.
+ * @todo Implement iterators, an is_empty function, and edge removal.
  */
 
-#include "../include/graph.h"
+#include "../include/ds/graph.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 
-/* Internal structs */
+/* Internal structures */
 
 typedef struct Neighbor {
     size_t vertex;
@@ -17,7 +18,7 @@ typedef struct Neighbor {
 } Neighbor;
 
 typedef struct Graph {
-    size_t vertex_count;
+    size_t size;
     bool directed;
     Neighbor **adjacency;
 } Graph;
@@ -25,28 +26,28 @@ typedef struct Graph {
 /* Internal API */
 
 /**
- * @brief Adds a directed edge between two vertices
+ * @brief Inserts a directed edge between two vertices.
  *
- * @param[in,out] graph Graph to modify
- * @param[in] source Index of the source vertex
- * @param[in] destination Index of the destination vertex
+ * @param[in,out] graph Graph to modify.
+ * @param[in] source Index of the source vertex.
+ * @param[in] destination Index of the destination vertex.
  *
- * @return true if the edge is added successfully, false if memory allocation fails
+ * @return true if the edge is inserted successfully; false if memory allocation fails.
  */
-static bool add_directed_edge(graph_t graph, size_t source, size_t destination);
+static bool ds_add_edge(ds_graph_t graph, size_t source, size_t destination);
 
 /* Lifecycle */
 
-graph_t graph_create(size_t vertex_count, bool directed) {
+ds_graph_t ds_graph_create(size_t size, bool directed) {
     // Allocate memory for a new graph and initialize its fields to zero
-    graph_t graph = calloc(1, sizeof(*graph));
+    ds_graph_t graph = calloc(1, sizeof(*graph));
 
     // Stop if memory allocation fails
     if (!graph) return NULL;
 
     // Allocate the adjacency list for all vertices
-    if (vertex_count) {
-        graph->adjacency = calloc(vertex_count, sizeof(*(graph->adjacency)));
+    if (size) {
+        graph->adjacency = calloc(size, sizeof(*(graph->adjacency)));
 
         // Free the graph if adjacency allocation fails
         if (!graph->adjacency) {
@@ -56,18 +57,18 @@ graph_t graph_create(size_t vertex_count, bool directed) {
     }
 
     // Initialize the graph properties
-    graph->vertex_count = vertex_count;
+    graph->size = size;
     graph->directed = directed;
 
     return graph;
 }
 
-void graph_destroy(graph_t *graph) {
+void ds_graph_destroy(ds_graph_t *graph) {
     // Do nothing if the graph pointer or the graph itself is NULL
     if (graph == NULL || *graph == NULL) return;
 
     // Free all adjacency lists
-    for (size_t i = 0; i < (*graph)->vertex_count; ++i) {
+    for (size_t i = 0; i < (*graph)->size; ++i) {
         Neighbor *node = (*graph)->adjacency[i];
 
         // Free all neighbors of the current vertex
@@ -82,20 +83,20 @@ void graph_destroy(graph_t *graph) {
     free((*graph)->adjacency);
     free(*graph);
 
-    // Reset the graph pointer
+    // Reset the graph handle
     *graph = NULL;
 }
 
 /* Graph state */
 
-size_t graph_vertex_count(const graph_t graph) {
+size_t ds_graph_size(const ds_graph_t graph) {
     // Return the number of vertices, or 0 if the graph is NULL
-    return !graph ? 0 : graph->vertex_count;
+    return !graph ? 0 : graph->size;
 }
 
 /* Internal helpers */
 
-static bool add_directed_edge(graph_t graph, size_t source, size_t destination) {
+static bool ds_add_edge(ds_graph_t graph, size_t source, size_t destination) {
     // Allocate memory for a new neighbor
     Neighbor *node = malloc(sizeof(*node));
 
@@ -112,19 +113,19 @@ static bool add_directed_edge(graph_t graph, size_t source, size_t destination) 
     return true;
 }
 
-/* Operations */
+/* Graph operations */
 
-bool graph_add_edge(graph_t graph, size_t source, size_t destination) {
-    // Do nothing if the graph is NULL or a vertex index is invalid
-    if (!graph || source >= graph->vertex_count || destination >= graph->vertex_count) {
+bool ds_graph_insert(ds_graph_t graph, size_t source, size_t destination) {
+    // Reject a NULL graph or invalid vertex indices
+    if (!graph || source >= graph->size || destination >= graph->size) {
         return false;
     }
 
-    // Add the directed edge from source to destination
-    if (!add_directed_edge(graph, source, destination)) return false;
+    // Insert the directed edge from source to destination
+    if (!ds_add_edge(graph, source, destination)) return false;
 
-    // Add the reverse edge if the graph is undirected
-    if (!graph->directed && !add_directed_edge(graph, destination, source)) {
+    // Insert the reverse edge if the graph is undirected
+    if (!graph->directed && !ds_add_edge(graph, destination, source)) {
         // Roll back the first insertion if the reverse insertion fails
         Neighbor *added = graph->adjacency[source];
         graph->adjacency[source] = added->next;
@@ -139,26 +140,31 @@ bool graph_add_edge(graph_t graph, size_t source, size_t destination) {
 
 /* Utilities */
 
-void graph_print(const graph_t graph) {
-    // Print an error message if the graph is NULL
-    if (!graph) {
-        puts("(graphe nul)");
-        return;
-    }
+// /**
+//  * @brief Prints the graph and its adjacency lists.
+//  *
+//  * @param[in] graph Graph to print.
+//  */
+// void ds_graph_print(const ds_graph_t graph) {
+//     // Print a placeholder if the graph is NULL
+//     if (!graph) {
+//         puts("(null graph)");
+//         return;
+//     }
 
-    // Print the adjacency list of each vertex
-    for (size_t i = 0; i < graph->vertex_count; ++i) {
-        printf("%zu :", i);
+//     // Print the adjacency list of each vertex
+//     for (size_t i = 0; i < graph->size; ++i) {
+//         printf("%zu :", i);
 
-        // Print all neighbors of the current vertex
-        for (
-            const Neighbor *node = graph->adjacency[i];
-            node != NULL;
-            node = node->next
-        ) {
-            printf(" %zu", node->vertex);
-        }
+//         // Print all neighbors of the current vertex
+//         for (
+//             const Neighbor *node = graph->adjacency[i];
+//             node != NULL;
+//             node = node->next
+//         ) {
+//             printf(" %zu", node->vertex);
+//         }
 
-        putchar('\n');
-    }
-}
+//         putchar('\n');
+//     }
+// }

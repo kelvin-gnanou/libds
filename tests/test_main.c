@@ -1,6 +1,6 @@
 /**
- * @file: test_main.c
- * @brief: Main entry point for the test suite
+ * @file test_main.c
+ * @brief Main entry point for the test suite
  */
 
 #include <stdio.h>  // puts

@@ -1,14 +1,15 @@
 /**
- * @file  : list.c
- * @brief : This file defines the functions declared in list.h
+ * @file list.c
+ * @brief Implements the public linked list interface declared in list.h.
+ * @todo Implement an iterator.
  */
 
-#include "../include/list.h"
+#include "../include/ds/list.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 
-/* Internal structs */
+/* Internal structures */
 
 typedef struct ListNode {
     int value;
@@ -16,78 +17,78 @@ typedef struct ListNode {
 } ListNode;
 
 typedef struct List {
-    ListNode *head; // head of list
-    ListNode *tail; // tail of list
-    size_t length;  // list length
+    ListNode *head; // Pointer to the first node
+    ListNode *tail; // Pointer to the last node
+    size_t size;    // Number of nodes in the list
 } List;
 
-/* internal API */
+/* Internal API */
 
 /**
- * @brief Removes all nodes from a list
+ * @brief Removes all nodes from a list.
  *
- * @param[in,out] list List to clear
+ * @param[in,out] list List to clear.
  *
- * @note The list itself remains allocated and can be reused
+ * @note The list itself remains allocated and can be reused.
  */
-static void list_clear(list_t list);
+static void ds_list_clear(ds_list_t list);
 
 /**
- * @brief Creates a new list node
+ * @brief Creates a new list node.
  *
- * @param[in] value Value to store in the new node
+ * @param[in] value Value to store in the new node.
  *
- * @return A pointer to the newly created node, or NULL if allocation fails
+ * @return A newly allocated node, or NULL if memory allocation fails.
  */
-static ListNode *node_create(int value);
+static ListNode *ds_node_create(int value);
 
 /**
- * @brief Removes the first or last occurrence of a given value
+ * @brief Removes the first or last occurrence of a given value.
  *
- * @param[in,out] list List to modify
- * @param[in] value Value to remove
- * @param[in] last_match If true, removes the last occurrence; otherwise, removes the first
+ * @param[in,out] list List to modify.
+ * @param[in] value Value to remove.
+ * @param[in] last_match Whether to remove the last occurrence instead of the first.
  *
- * @return true if an occurrence is found and removed, false otherwise
+ * @return true if an occurrence is found and removed; false otherwise.
  *
- * @note Internal helper function, accessible only within this source file
+ * @note This helper is private to this source file.
  */
-static bool remove_value(list_t list, int value, bool last_match);
+static bool ds_list_remove(ds_list_t list, int value, bool last_match);
 
-/* Public API */
+/* Lifecycle */
 
-list_t list_create(void) {
-    // Create an empty list and initialize all fields to zero
+ds_list_t ds_list_create(void) {
+    // Allocate a new list and initialize all fields to zero
     return calloc(1, sizeof(List));
 }
 
-void list_destroy(list_t *list) {
+void ds_list_destroy(ds_list_t *list) {
     // Do nothing if the list pointer or the list itself is NULL
     if (list == NULL || *list == NULL) return;
 
-    // Clear all nodes from the list
-    list_clear(*list);
+    // Remove all nodes from the list
+    ds_list_clear(*list);
 
-    // Free the memory allocated for the list
+    // Free the list structure
     free(*list);
     *list = NULL;
 }
 
-/* list state */
+/* List state */
 
-bool list_is_empty(const list_t list) {
-    // Return true if the list is NULL or empty
-    return !list || list->length == 0;
+bool ds_list_empty(const ds_list_t list) {
+    // Return true if the list is NULL or contains no nodes
+    return !list || list->size == 0;
 }
 
-size_t list_length(const list_t list) {
-    // Return the number of nodes in the list, or 0 if the list is NULL
-    return !list ? 0 : list->length;
+size_t ds_list_size(const ds_list_t list) {
+    // Return the number of nodes, or 0 if the list is NULL
+    return !list ? 0 : list->size;
 }
 
 /* Internal helpers */
 
-static void list_clear(list_t list) {
+static void ds_list_clear(ds_list_t list) {
     // Do nothing if the list is NULL
     if (!list) return;
 
@@ -102,17 +103,17 @@ static void list_clear(list_t list) {
     // Reset the list to its empty state
     list->head = NULL;
     list->tail = NULL;
-    list->length = 0;
+    list->size = 0;
 }
 
-static ListNode *node_create(int value) {
+static ListNode *ds_node_create(int value) {
     // Allocate memory for a new node
     ListNode *node = malloc(sizeof(*node));
 
     // Stop if memory allocation fails
     if (!node) return NULL;
 
-    // Initialize the new node
+    // Initialize the node fields
     node->value = value;
     node->next = NULL;
 
@@ -121,12 +122,12 @@ static ListNode *node_create(int value) {
 
 /* Insertion */
 
-bool list_push_front(list_t list, int value) {
-    // Do nothing if the list is NULL
+bool ds_list_push_front(ds_list_t list, int value) {
+    // Reject a NULL list
     if (!list) return false;
 
     // Create a new node
-    ListNode *node = node_create(value);
+    ListNode *node = ds_node_create(value);
 
     // Stop if memory allocation fails
     if (!node) return false;
@@ -138,18 +139,18 @@ bool list_push_front(list_t list, int value) {
     // Update the tail if the list was empty
     if (!list->tail) list->tail = node;
 
-    // Update the list length
-    list->length++;
+    // Increment the list size
+    list->size++;
 
     return true;
 }
 
-bool list_push_back(list_t list, int value) {
-    // Do nothing if the list is NULL
+bool ds_list_push_back(ds_list_t list, int value) {
+    // Reject a NULL list
     if (!list) return false;
 
     // Create a new node
-    ListNode *node = node_create(value);
+    ListNode *node = ds_node_create(value);
 
     // Stop if memory allocation fails
     if (!node) return false;
@@ -160,25 +161,25 @@ bool list_push_back(list_t list, int value) {
     else
         list->tail->next = node;
 
-    // Update the tail
+    // Update the tail pointer
     list->tail = node;
 
-    // update length
-    list->length++;
+    // Increment the list size
+    list->size++;
 
     return true;
 }
 
 /* Removal */
 
-bool list_pop_front(list_t list, int *out_value) {
-    // Do nothing if the list is empty
-    if (list_is_empty(list)) return false;
+bool ds_list_pop_front(ds_list_t list, int *out_value) {
+    // Stop if the list is NULL or empty
+    if (ds_list_empty(list)) return false;
 
-    // Store the first node
+    // Store a pointer to the first node
     ListNode *node = list->head;
 
-    // Copy its value if an output pointer is provided
+    // Copy the node value if an output pointer is provided
     if (out_value)
         *out_value = node->value;
 
@@ -189,21 +190,21 @@ bool list_pop_front(list_t list, int *out_value) {
     if (!list->head)
         list->tail = NULL;
 
-    // Update the list length and free the removed node
-    list->length--;
+    // Decrement the list size and free the removed node
+    list->size--;
     free(node);
 
     return true;
 }
 
-bool list_pop_back(list_t list, int *out_value) {
-    // Do nothing if the list is empty
-    if (list_is_empty(list)) return false;
+bool ds_list_pop_back(ds_list_t list, int *out_value) {
+    // Stop if the list is NULL or empty
+    if (ds_list_empty(list)) return false;
 
-    // Store the last node
+    // Store a pointer to the last node
     ListNode *node = list->tail;
 
-    // Copy its value if an output pointer is provided
+    // Copy the node value if an output pointer is provided
     if (out_value)
         *out_value = node->value;
 
@@ -218,23 +219,23 @@ bool list_pop_back(list_t list, int *out_value) {
             previous = previous->next;
         }
 
-        // Remove the last node and update the tail
+        // Detach the last node and update the tail
         previous->next = NULL;
         list->tail = previous;
     }
 
-    // Update the list length and free the removed node
-    list->length--;
+    // Decrement the list size and free the removed node
+    list->size--;
     free(node);
 
     return true;
 }
 
-static bool remove_value(list_t list, int value, bool last_match) {
-    // Do nothing if the list is empty
-    if (list_is_empty(list)) return false;
+static bool ds_list_remove(ds_list_t list, int value, bool last_match) {
+    // Stop if the list is NULL or empty
+    if (ds_list_empty(list)) return false;
 
-    // Initialize pointers to track the matching node and its predecessor
+    // Track the matching node and its predecessor
     ListNode *match = NULL;
     ListNode *match_previous = NULL;
     ListNode *previous = NULL;
@@ -254,7 +255,7 @@ static bool remove_value(list_t list, int value, bool last_match) {
     // Stop if the value is not found
     if (!match) return false;
 
-    // Remove the matching node from the list
+    // Unlink the matching node from the list
     if (!match_previous)
         list->head = match->next;
     else
@@ -264,39 +265,40 @@ static bool remove_value(list_t list, int value, bool last_match) {
     if (list->tail == match)
         list->tail = match_previous;
 
-    // Update the list length and free the removed node
-    list->length--;
+    // Decrement the list size and free the removed node
+    list->size--;
     free(match);
 
     return true;
 }
 
-bool list_remove_first(list_t list, int value) {
+bool ds_list_remove_first(ds_list_t list, int value) {
     // Remove the first occurrence of the given value
-    return remove_value(list, value, false);
+    return ds_list_remove(list, value, false);
 }
 
-bool list_remove_last(list_t list, int value) {
+bool ds_list_remove_last(ds_list_t list, int value) {
     // Remove the last occurrence of the given value
-    return remove_value(list, value, true);
+    return ds_list_remove(list, value, true);
 }
 
-/* utilities */
-void list_print(const list_t list) {
-    // Print the opening bracket
-    putchar('[');
+/* Utilities */
 
-    // Print all values separated by commas
-    if (list) {
-        for (
-            const ListNode *node = list->head;
-            node != NULL;
-            node = node->next
-        ) {
-            printf("%d%s", node->value, node->next == NULL ? "" : ", ");
-        }
-    }
+// void ds_list_print(const ds_list_t list) {
+//     // Print the opening bracket
+//     putchar('[');
 
-    // Print the closing bracket and a newline
-    puts("]");
-}
+//     // Print all values separated by commas
+//     if (list) {
+//         for (
+//             const ListNode *node = list->head;
+//             node != NULL;
+//             node = node->next
+//         ) {
+//             printf("%d%s", node->value, node->next == NULL ? "" : ", ");
+//         }
+//     }
+
+//     // Print the closing bracket and a newline
+//     puts("]");
+// }
